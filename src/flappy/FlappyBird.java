@@ -22,25 +22,16 @@ public class FlappyBird extends JPanel implements KeyListener,ActionListener{
 	private boolean play=false;
 	private int score=0;
 	private int highscore=0;
-	private int yPos=400;
-	private int ySpeed= 0;
 	private int count=0;
-	private int barrierY=400;
-	private int barrierX=750;
-	private BufferedImage up;
-	private BufferedImage down;
+	private Bird bird;
+	private Barrier barrier;
 	
 	public FlappyBird(){
-		try {
-			up = ImageIO.read(new File("rsz_up.png"));
-			down = ImageIO.read(new File("rsz_1straight.png"));
-
-		} catch(IOException e) {
-			System.out.println("ERROR: " + e);
-		}
+		bird=new Bird();
+		barrier=new Barrier();
 		addKeyListener(this);
 		setFocusable(true);
-		time=new Timer(15,this);
+		time=new Timer(12,this);
 		time.start();
 	}
 	
@@ -55,15 +46,12 @@ public class FlappyBird extends JPanel implements KeyListener,ActionListener{
 			g.drawString("HighScore: "+Integer.toString(highscore), 250,400);
 		}
 		else {
+			int barrierX=barrier.getLocation()[0];
+			int barrierY=barrier.getLocation()[1];
 			g.setColor(Color.black);
 			g.fillRect(0, 0, 800, 800);
 			
-			if(ySpeed<0) {
-				g.drawImage(up, 50, yPos, null);
-			}
-			else {
-				g.drawImage(down, 50, yPos, null);
-			}
+			bird.paintBird(g);
 			g.setColor(Color.GREEN);
 			g.fillRect(barrierX, 0, 50, barrierY-100);
 			g.fillRect(barrierX, barrierY+50, 50, 800-barrierY+100);
@@ -78,33 +66,28 @@ public class FlappyBird extends JPanel implements KeyListener,ActionListener{
 	public void actionPerformed(ActionEvent arg0) {
 		//time.start();
 		if(play) {
-			ySpeed++;
-			yPos+=ySpeed;
-			boolean topcollision=(new Rectangle(50, yPos, 30, 30).intersects
-					(new Rectangle(barrierX, 0, 20, barrierY-100)));
-			boolean bottomcollision=(new Rectangle(50, yPos, 30, 30).intersects
-					(new Rectangle(barrierX, barrierY+50, 20, 800-barrierY+100)));
-			if(yPos<=0 || yPos>=780 ||topcollision || bottomcollision) {
+			bird.moveBird();
+			boolean topcollision=(new Rectangle(50, bird.getyPos(), 30, 30).intersects
+					(new Rectangle(barrier.getLocation()[0], 0, 20, barrier.getLocation()[1]-100)));
+			boolean bottomcollision=(new Rectangle(50, bird.getyPos(), 30, 30).intersects
+					(new Rectangle(barrier.getLocation()[0], barrier.getLocation()[1]+50, 20, 800-barrier.getLocation()[1]+100)));
+			if(bird.getyPos()<=0 || bird.getyPos()>=780 ||topcollision || bottomcollision) {
 				play=false;
 				if(score>highscore) {
 					highscore=score;
 				}
 				score=0;
-				yPos=400;
-				ySpeed=0;
-				barrierX=650;
-				barrierY=450;
+				bird.reset();
+				barrier=new Barrier();
 				count=0;
 			}
 			
-			if(count==80) {
+			if(barrier.getLocation()[0]<=-50) {
+				barrier=new Barrier();
+			}else if(barrier.getLocation()[0]==0){
 				score++;
-				barrierY=(int) (Math.random()*600)+100;
-				barrierX=780;
-				count=0;
 			}
-			count++;
-			barrierX-=10;
+			barrier.move();
 		}
 		repaint();
 	}
@@ -112,7 +95,7 @@ public class FlappyBird extends JPanel implements KeyListener,ActionListener{
 	@Override
 	public void keyPressed(KeyEvent e) {
 		if(e.getKeyCode()==KeyEvent.VK_SPACE && play) {
-			ySpeed= (-15);
+			bird.keyPress();
 		}
 		if(e.getKeyCode()==KeyEvent.VK_ENTER) {
 			play=!play;
